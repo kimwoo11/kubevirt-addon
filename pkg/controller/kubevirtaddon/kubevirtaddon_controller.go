@@ -116,7 +116,6 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		return reconcile.Result{}, nil
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -129,7 +128,6 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		return reconcile.Result{}, nil
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
