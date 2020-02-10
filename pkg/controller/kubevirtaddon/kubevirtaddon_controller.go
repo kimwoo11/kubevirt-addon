@@ -2,6 +2,7 @@ package kubevirtaddon
 
 import (
 	"context"
+	"time"
 
 	appv1alpha1 "github.ibm.com/steve-kim-ibm/kubevirt-addon/pkg/apis/app/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -103,35 +104,43 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 		return reconcile.Result{}, err
 	}
 	service := newServiceForVMI(instance)
-	secret := newSecretforVMI(instance)
-
 	foundSvc := &corev1.Service{}
-	foundSecret := &corev1.Secret{}
 
 	// Check if service already exists
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: service.Name, Namespace: service.Namespace}, foundSvc)
 	if err != nil && errors.IsNotFound(err) {
 		reqLogger.Info("Creating new service", "Service.Namespace", service.Namespace, "Service.Name", service.Name)
 		err = r.client.Create(context.TODO(), service)
-		if err != nil {
+		if err != nil && errors.IsAlreadyExists(err) {
+			reqLogger.Info("Service already exists", "Service.Name", service.Name)
+		} else {
 			return reconcile.Result{}, err
 		}
-	} else if err != nil && errors.IsAlreadyExists(err) {
-		reqLogger.Info("Service already exists", "Service.Name", service.Name)
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
 
+	// Get dedicated node
+	updatedService := &corev1.Service{}
+	time.Sleep(5 * time.Second)
+
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: service.Name, Namespace: service.Namespace}, updatedService)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	secret := newSecretforVMI(instance, updatedService)
+	foundSecret := &corev1.Secret{}
 	// Check if secret already exists
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, foundSecret)
 	if err != nil && errors.IsNotFound(err) {
 		reqLogger.Info("Creating new secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
 		err = r.client.Create(context.TODO(), secret)
-		if err != nil {
+		if err != nil && errors.IsAlreadyExists(err) {
+			reqLogger.Info("Secret already exists", "Secret.Name", secret.Name)
+		} else {
 			return reconcile.Result{}, err
 		}
-	} else if err != nil && errors.IsAlreadyExists(err) {
-		reqLogger.Info("Secret already exists", "Secret.Name", secret.Name)
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -167,7 +176,7 @@ func newServiceForVMI(vmi *vmiv1.VirtualMachineInstance) *corev1.Service {
 	}
 }
 
-func newSecretforVMI(vmi *vmiv1.VirtualMachineInstance) *corev1.Secret {
+func newSecretforVMI(vmi *vmiv1.VirtualMachineInstance, svc *corev1.Service) *corev1.Secret {
 	labels := map[string]string{
 		"app": vmi.Name,
 	}
@@ -178,8 +187,9 @@ func newSecretforVMI(vmi *vmiv1.VirtualMachineInstance) *corev1.Secret {
 			Labels:    labels,
 		},
 		StringData: map[string]string{
-			"username": "cirros",
-			"password": "gocubsgo",
+			"username":             "cirros",
+			"password":             "gocubsgo",
+			"kubevirt.io/nodeName": svc.Spec.Selector["kubevirt.io/nodeName"],
 		},
 	}
 }
