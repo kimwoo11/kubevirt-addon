@@ -116,6 +116,8 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 		if err != nil {
 			return reconcile.Result{}, err
 		}
+	} else if err != nil && errors.IsAlreadyExists(err) {
+		reqLogger.Info("Service already exists", "Service.Name", service.Name)
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -128,6 +130,8 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 		if err != nil {
 			return reconcile.Result{}, err
 		}
+	} else if err != nil && errors.IsAlreadyExists(err) {
+		reqLogger.Info("Secret already exists", "Secret.Name", secret.Name)
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -169,7 +173,7 @@ func newSecretforVMI(vmi *vmiv1.VirtualMachineInstance) *corev1.Secret {
 	}
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      vmi.Name + "-service",
+			Name:      vmi.Name + "-secret",
 			Namespace: vmi.Namespace,
 			Labels:    labels,
 		},
