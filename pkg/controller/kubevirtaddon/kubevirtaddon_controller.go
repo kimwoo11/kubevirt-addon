@@ -111,9 +111,7 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 	if err != nil && errors.IsNotFound(err) {
 		reqLogger.Info("Creating new service", "Service.Namespace", service.Namespace, "Service.Name", service.Name)
 		err = r.client.Create(context.TODO(), service)
-		if err != nil && errors.IsAlreadyExists(err) {
-			reqLogger.Info("Service already exists", "Service.Name", service.Name)
-		} else {
+		if err != nil {
 			return reconcile.Result{}, err
 		}
 	} else if err != nil {
@@ -136,9 +134,7 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 	if err != nil && errors.IsNotFound(err) {
 		reqLogger.Info("Creating new secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
 		err = r.client.Create(context.TODO(), secret)
-		if err != nil && errors.IsAlreadyExists(err) {
-			reqLogger.Info("Secret already exists", "Secret.Name", secret.Name)
-		} else {
+		if err != nil {
 			return reconcile.Result{}, err
 		}
 	} else if err != nil {
@@ -187,9 +183,9 @@ func newSecretforVMI(vmi *vmiv1.VirtualMachineInstance, svc *corev1.Service) *co
 			Labels:    labels,
 		},
 		StringData: map[string]string{
-			"username":             "cirros",
-			"password":             "gocubsgo",
-			"kubevirt.io/nodeName": svc.Spec.Selector["kubevirt.io/nodeName"],
+			"username": "cirros",
+			"password": "gocubsgo",
+			"node":     svc.Spec.Selector["kubevirt.io/nodeName"],
 		},
 	}
 }
