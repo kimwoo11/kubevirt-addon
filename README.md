@@ -9,7 +9,7 @@ Creates a Service and Secret for ssh into existing/new VMIs
 mkdir -p <project-directory>
 cd <project-directory>
 git clone https://github.ibm.com/steve-kim-ibm/kubevirt-addon.git
-cd multicloud-operators-test
+cd kubevirt-addon
 ```
 
 2. Deploy the CRD and the operator
