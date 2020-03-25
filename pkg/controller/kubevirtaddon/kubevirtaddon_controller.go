@@ -105,6 +105,7 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 	if generate != nil {
 		if len(generate.Services) > 0 {
 			for _, svcSpec := range generate.Services {
+				reqLogger.Info("Generating service " + svcSpec.Name)
 				svc, err := generateService(&svcSpec, r)
 				if err != nil {
 					return reconcile.Result{}, err
@@ -117,6 +118,7 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 					return reconcile.Result{}, err
 				}
 				if svcSpec.Host != "" {
+					reqLogger.Info("Generating route " + svcSpec.Name)
 					route := generateRoute(&svcSpec)
 					err := r.client.Create(context.TODO(), route)
 					if err != nil {
@@ -127,6 +129,7 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 					}
 				}
 				if svcSpec.GenerateEndpoint {
+					reqLogger.Info("Generating endpoint " + svcSpec.Name)
 					endpoint := generateEndpoint(&svcSpec)
 					if err := controllerutil.SetControllerReference(instance, endpoint, r.scheme); err != nil {
 						reqLogger.Error(err, "unable to set owner reference on new pod")
