@@ -4,14 +4,40 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+// VMISpec defines which resource is targeted for generation
+type VMISpec struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+// ServiceSpec defines the details of the service to be generated
+type ServiceSpec struct {
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Selector          map[string]string `json:"selector,omitempty"`
+	Port              int32             `json:"port,omitempty"`
+	TargetPort        int32             `json:"targetPort,omitempty"`
+	VMI               *VMISpec          `json:"vmi,omitempty"`
+	Host              string            `json:"host,omitempty"`
+	GenerateEndpoint  bool              `json:"generateEndpoint,omitempty"`
+}
+
+// RouteSpec defines the details of the routes to be generated
+type RouteSpec struct {
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Host              string `json:"host,omitempty"`
+}
+
+// GenerateSpec defines the gvr and wanted metadata to be used for generating new objects
+type GenerateSpec struct {
+	Services []ServiceSpec `json:"services,omitempty"`
+	Routes   []RouteSpec   `json:"routes,omitempty"`
+}
 
 // KubevirtAddonSpec defines the desired state of KubevirtAddon
 type KubevirtAddonSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	Generate *GenerateSpec `json:"generate,omitempty"`
 }
 
 // KubevirtAddonStatus defines the observed state of KubevirtAddon

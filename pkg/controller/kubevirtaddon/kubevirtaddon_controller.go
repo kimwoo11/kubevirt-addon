@@ -2,18 +2,18 @@ package kubevirtaddon
 
 import (
 	"context"
-	"time"
 
+	ocpv1 "github.com/openshift/api/route/v1"
 	appv1alpha1 "github.ibm.com/steve-kim-ibm/kubevirt-addon/pkg/apis/app/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	vmiv1 "kubevirt.io/client-go/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -47,21 +47,21 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// // Watch for changes to primary resource KubevirtAddon
-	// err = c.Watch(&source.Kind{Type: &appv1alpha1.KubevirtAddon{}}, &handler.EnqueueRequestForObject{})
-	// if err != nil {
-	// 	return err
-	// }
-
 	// Watch for changes to primary resource KubevirtAddon
-	err = c.Watch(&source.Kind{Type: &vmiv1.VirtualMachineInstance{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &appv1alpha1.KubevirtAddon{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
+	// // Watch for changes to primary resource KubevirtAddon
+	// err = c.Watch(&source.Kind{Type: &vmiv1.VirtualMachineInstance{}}, &handler.EnqueueRequestForObject{})
+	// if err != nil {
+	// 	return err
+	// }
+
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
 	// Watch for changes to secondary resource Pods and requeue the owner KubevirtAddon
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &appv1alpha1.KubevirtAddon{},
 	})
@@ -69,6 +69,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for created Route
+	err = c.Watch(&source.Kind{Type: &ocpv1.Route{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &appv1alpha1.KubevirtAddon{},
+	})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -92,10 +100,10 @@ type ReconcileKubevirtAddon struct {
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling VMI")
+	reqLogger.Info("Reconciling KubevirtAddon")
 
-	// Fetch the VMI instance
-	instance := &vmiv1.VirtualMachineInstance{}
+	// Fetch KubevirtAddon instance
+	instance := &appv1alpha1.KubevirtAddon{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -103,89 +111,109 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 		}
 		return reconcile.Result{}, err
 	}
-	service := newServiceForVMI(instance)
-	foundSvc := &corev1.Service{}
 
-	// Check if service already exists
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: service.Name, Namespace: service.Namespace}, foundSvc)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating new service", "Service.Namespace", service.Namespace, "Service.Name", service.Name)
-		err = r.client.Create(context.TODO(), service)
-		if err != nil {
-			return reconcile.Result{}, err
+	generate := instance.Spec.Generate
+	if generate != nil {
+		if len(generate.Services) > 0 {
+			for _, svcSpec := range generate.Services {
+				svc, err := generateService(&svcSpec, r)
+				if err != nil {
+					return reconcile.Result{}, err
+				}
+				err = r.client.Create(context.TODO(), svc)
+				if err != nil {
+					return reconcile.Result{}, err
+				}
+				if svcSpec.Host != "" {
+					route := generateRoute(&svcSpec)
+					err := r.client.Create(context.TODO(), route)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
+				}
+				if svcSpec.GenerateEndpoint {
+					endpoint := generateEndpoint(&svcSpec)
+					if err := controllerutil.SetControllerReference(instance, endpoint, r.scheme); err != nil {
+						reqLogger.Error(err, "unable to set owner reference on new pod")
+						return reconcile.Result{}, err
+					}
+				}
+			}
 		}
-	} else if err != nil {
-		return reconcile.Result{}, err
 	}
-
-	// Get dedicated node
-	updatedService := &corev1.Service{}
-	time.Sleep(5 * time.Second)
-
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: service.Name, Namespace: service.Namespace}, updatedService)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	secret := newSecretforVMI(instance, updatedService)
-	foundSecret := &corev1.Secret{}
-	// Check if secret already exists
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, foundSecret)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating new secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
-		err = r.client.Create(context.TODO(), secret)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-	} else if err != nil {
-		return reconcile.Result{}, err
-	}
-
 	return reconcile.Result{}, nil
 }
 
-func newServiceForVMI(vmi *vmiv1.VirtualMachineInstance) *corev1.Service {
-	labels := map[string]string{
-		"app": vmi.Name,
-	}
+func generateService(svc *appv1alpha1.ServiceSpec, r *ReconcileKubevirtAddon) (*corev1.Service, error) {
+	var selector map[string]string
+
 	targetPort := intstr.IntOrString{
-		IntVal: 22,
+		IntVal: svc.TargetPort,
+	}
+
+	if svc.VMI != nil {
+		vmi := &vmiv1.VirtualMachineInstance{}
+		err := r.client.Get(context.Background(), client.ObjectKey{
+			Namespace: svc.VMI.Name,
+			Name:      svc.VMI.Namespace,
+		}, vmi)
+		if err != nil {
+			return nil, err
+		}
+		selector = vmi.ObjectMeta.Labels
+	} else {
+		selector = svc.Selector
 	}
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      vmi.Name + "-service",
-			Namespace: vmi.Namespace,
-			Labels:    labels,
+			Name:      svc.ObjectMeta.Name,
+			Namespace: svc.ObjectMeta.Namespace,
+			Labels:    svc.ObjectMeta.Labels,
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{
-					Port:       27017,
-					NodePort:   30000,
-					Protocol:   "TCP",
+					Port:       svc.Port,
 					TargetPort: targetPort,
 				},
 			},
-			Selector: vmi.Labels,
-			Type:     "NodePort",
+			Selector: selector,
+		},
+	}, nil
+}
+
+func generateRoute(svc *appv1alpha1.ServiceSpec) *ocpv1.Route {
+	return &ocpv1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      svc.ObjectMeta.Name,
+			Namespace: svc.ObjectMeta.Namespace,
+			Labels:    svc.ObjectMeta.Labels,
+		},
+		Spec: ocpv1.RouteSpec{
+			Host: svc.Host,
+			To: ocpv1.RouteTargetReference{
+				Kind: "Service",
+				Name: svc.ObjectMeta.Name,
+			},
 		},
 	}
 }
 
-func newSecretforVMI(vmi *vmiv1.VirtualMachineInstance, svc *corev1.Service) *corev1.Secret {
-	labels := map[string]string{
-		"app": vmi.Name,
-	}
-	return &corev1.Secret{
+func generateEndpoint(svc *appv1alpha1.ServiceSpec) *corev1.Endpoints {
+	return &corev1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      vmi.Name + "-secret",
-			Namespace: vmi.Namespace,
-			Labels:    labels,
+			Name:      svc.ObjectMeta.Name,
+			Namespace: svc.ObjectMeta.Namespace,
+			Labels:    svc.ObjectMeta.Labels,
 		},
-		StringData: map[string]string{
-			"username": "cirros",
-			"password": "gocubsgo",
-			"node":     svc.Spec.Selector["kubevirt.io/nodeName"],
+		Subsets: []corev1.EndpointSubset{
+			corev1.EndpointSubset{
+				Addresses: []corev1.EndpointAddress{
+					corev1.EndpointAddress{
+						Hostname: svc.Host,
+					},
+				},
+			},
 		},
 	}
 }
