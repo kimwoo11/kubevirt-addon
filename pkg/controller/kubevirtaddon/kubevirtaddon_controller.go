@@ -146,8 +146,8 @@ func generateService(svc *appv1alpha1.ServiceSpec, r *ReconcileKubevirtAddon) (*
 	if svc.VMI != nil {
 		vmi := &vmiv1.VirtualMachineInstance{}
 		err := r.client.Get(context.Background(), client.ObjectKey{
-			Namespace: svc.VMI.Name,
-			Name:      svc.VMI.Namespace,
+			Name:      svc.VMI.Name,
+			Namespace: svc.VMI.Namespace,
 		}, vmi)
 		if err != nil {
 			return nil, err
