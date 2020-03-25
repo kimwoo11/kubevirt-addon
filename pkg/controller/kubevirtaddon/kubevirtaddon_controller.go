@@ -111,7 +111,7 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 				}
 				err = r.client.Create(context.TODO(), svc)
 				if err != nil {
-					if errors.IsNotFound(err) {
+					if errors.IsAlreadyExists(err) {
 						return reconcile.Result{}, nil
 					}
 					return reconcile.Result{}, err
@@ -120,7 +120,7 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 					route := generateRoute(&svcSpec)
 					err := r.client.Create(context.TODO(), route)
 					if err != nil {
-						if errors.IsNotFound(err) {
+						if errors.IsAlreadyExists(err) {
 							return reconcile.Result{}, nil
 						}
 						return reconcile.Result{}, err
@@ -134,7 +134,7 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 					}
 					err := r.client.Create(context.TODO(), endpoint)
 					if err != nil {
-						if errors.IsNotFound(err) {
+						if errors.IsAlreadyExists(err) {
 							return reconcile.Result{}, nil
 						}
 						return reconcile.Result{}, err
