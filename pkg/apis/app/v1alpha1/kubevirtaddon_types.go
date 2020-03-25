@@ -14,7 +14,7 @@ type VMISpec struct {
 
 // ServiceSpec defines the details of the service to be generated
 type ServiceSpec struct {
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitempty,inline"`
 	Selector          map[string]string `json:"selector,omitempty"`
 	Port              int32             `json:"port,omitempty"`
 	TargetPort        int32             `json:"targetPort,omitempty"`

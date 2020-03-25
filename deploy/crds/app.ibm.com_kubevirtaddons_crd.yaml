@@ -55,8 +55,6 @@ spec:
                         type: boolean
                       host:
                         type: string
-                      metadata:
-                        type: object
                       port:
                         format: int32
                         type: integer

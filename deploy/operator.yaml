@@ -15,7 +15,6 @@ spec:
       serviceAccountName: kubevirt-addon
       containers:
         - name: kubevirt-addon
-          # Replace this with the built image name
           image: quay.io/stevekimibm/kubevirt-addon
           command:
           - kubevirt-addon

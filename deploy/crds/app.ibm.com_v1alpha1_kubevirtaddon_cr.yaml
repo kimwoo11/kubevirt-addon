@@ -1,7 +1,22 @@
 apiVersion: app.ibm.com/v1alpha1
 kind: KubevirtAddon
 metadata:
-  name: example-kubevirtaddon
+  name: guestbook-application
 spec:
-  # Add fields here
-  size: 3
+  generate: 
+    services:
+    - metadata:
+        name: redis-master
+        namespace: default
+        labels:
+          app: redis
+          role: master
+          tier: backend
+      vmi:
+        name: redis-master
+        namespace: default
+      port: 6379
+      targetPort: 6379
+    - metadata:
+        name: 
+        
