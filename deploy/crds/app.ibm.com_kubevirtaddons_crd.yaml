@@ -30,6 +30,58 @@ spec:
           type: object
         spec:
           description: KubevirtAddonSpec defines the desired state of KubevirtAddon
+          properties:
+            generate:
+              description: GenerateSpec defines the gvr and wanted metadata to be
+                used for generating new objects
+              properties:
+                routes:
+                  items:
+                    description: RouteSpec defines the details of the routes to be
+                      generated
+                    properties:
+                      host:
+                        type: string
+                      metadata:
+                        type: object
+                    type: object
+                  type: array
+                services:
+                  items:
+                    description: ServiceSpec defines the details of the service to
+                      be generated
+                    properties:
+                      generateEndpoint:
+                        type: boolean
+                      host:
+                        type: string
+                      metadata:
+                        type: object
+                      port:
+                        format: int32
+                        type: integer
+                      selector:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      targetPort:
+                        format: int32
+                        type: integer
+                      vmi:
+                        description: VMISpec defines which resource is targeted for
+                          generation
+                        properties:
+                          name:
+                            type: string
+                          namespace:
+                            type: string
+                        required:
+                        - name
+                        - namespace
+                        type: object
+                    type: object
+                  type: array
+              type: object
           type: object
         status:
           description: KubevirtAddonStatus defines the observed state of KubevirtAddon
