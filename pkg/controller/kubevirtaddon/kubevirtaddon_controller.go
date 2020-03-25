@@ -85,9 +85,6 @@ type ReconcileKubevirtAddon struct {
 
 // Reconcile reads that state of the cluster for a KubevirtAddon object and makes changes based on the state read
 // and what is in the KubevirtAddon.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
-// Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile.Result, error) {
@@ -114,12 +111,18 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 				}
 				err = r.client.Create(context.TODO(), svc)
 				if err != nil {
+					if errors.IsNotFound(err) {
+						return reconcile.Result{}, nil
+					}
 					return reconcile.Result{}, err
 				}
 				if svcSpec.Host != "" {
 					route := generateRoute(&svcSpec)
 					err := r.client.Create(context.TODO(), route)
 					if err != nil {
+						if errors.IsNotFound(err) {
+							return reconcile.Result{}, nil
+						}
 						return reconcile.Result{}, err
 					}
 				}
@@ -127,6 +130,13 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 					endpoint := generateEndpoint(&svcSpec)
 					if err := controllerutil.SetControllerReference(instance, endpoint, r.scheme); err != nil {
 						reqLogger.Error(err, "unable to set owner reference on new pod")
+						return reconcile.Result{}, err
+					}
+					err := r.client.Create(context.TODO(), endpoint)
+					if err != nil {
+						if errors.IsNotFound(err) {
+							return reconcile.Result{}, nil
+						}
 						return reconcile.Result{}, err
 					}
 				}
