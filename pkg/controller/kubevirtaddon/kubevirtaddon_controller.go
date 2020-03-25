@@ -69,14 +69,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for created Route
-	err = c.Watch(&source.Kind{Type: &ocpv1.Route{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &appv1alpha1.KubevirtAddon{},
-	})
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
