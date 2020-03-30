@@ -11,6 +11,9 @@ spec:
         app: redis
         role: master
         tier: backend
+      vmi:
+        name: redis-master
+        namespace: default
       port: 6379
       targetPort: 6379
     - name: redis-slave
@@ -19,12 +22,18 @@ spec:
         app: redis
         role: slave
         tier: backend
+      vmi:
+        name: redis-slave
+        namespace: default
       port: 6379
     - name: frontend
       namespace: default
       labels:
         app: guestbook
         tier: frontend
+      vmi:
+        name: frontend
+        namespace: default
       port: 31323
       targetPort: 80
       host: guestbook.apps.folie.os.fyre.ibm.com
