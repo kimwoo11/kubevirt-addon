@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	vmiv1 "kubevirt.io/client-go/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -104,6 +105,17 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 	if generate != nil {
 		if len(generate.Services) > 0 {
 			for _, svcSpec := range generate.Services {
+				vmi := &vmiv1.VirtualMachineInstance{}
+				err := r.client.Get(context.Background(), client.ObjectKey{
+					Name:      svcSpec.VMI.Name,
+					Namespace: svcSpec.VMI.Namespace,
+				}, vmi)
+				if err != nil {
+					if errors.IsNotFound(err) {
+						return reconcile.Result{}, nil
+					}
+					return reconcile.Result{}, err
+				}
 				reqLogger.Info("Generating service " + svcSpec.Name)
 				svc, err := generateService(&svcSpec, r)
 				if err != nil {
@@ -113,8 +125,9 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 				if err != nil {
 					if errors.IsAlreadyExists(err) {
 						reqLogger.Info("Service already exists")
+					} else {
+						return reconcile.Result{}, err
 					}
-					return reconcile.Result{}, err
 				}
 				if svcSpec.Host != "" {
 					reqLogger.Info("Generating route " + svcSpec.Name)
@@ -123,13 +136,14 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 					if err != nil {
 						if errors.IsAlreadyExists(err) {
 							reqLogger.Info("Route already exists")
+						} else {
+							return reconcile.Result{}, err
 						}
-						return reconcile.Result{}, err
 					}
 				}
 				if svcSpec.GenerateEndpoint {
 					reqLogger.Info("Generating endpoint " + svcSpec.Name)
-					endpoint := generateEndpoint(&svcSpec, svc)
+					endpoint := generateEndpoint(&svcSpec, svc, vmi)
 					if err := controllerutil.SetControllerReference(instance, endpoint, r.scheme); err != nil {
 						reqLogger.Error(err, "unable to set owner reference on new pod")
 						return reconcile.Result{}, err
@@ -138,8 +152,9 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 					if err != nil {
 						if errors.IsAlreadyExists(err) {
 							reqLogger.Info("Endpoint already exists")
+						} else {
+							return reconcile.Result{}, err
 						}
-						return reconcile.Result{}, err
 					}
 				}
 			}
@@ -203,7 +218,7 @@ func generateRoute(svc *appv1alpha1.ServiceSpec) *ocpv1.Route {
 	}
 }
 
-func generateEndpoint(svcSpec *appv1alpha1.ServiceSpec, svc *corev1.Service) *corev1.Endpoints {
+func generateEndpoint(svcSpec *appv1alpha1.ServiceSpec, svc *corev1.Service, vmi *vmiv1.VirtualMachineInstance) *corev1.Endpoints {
 	return &corev1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      svcSpec.ObjectMeta.Name,
@@ -214,8 +229,13 @@ func generateEndpoint(svcSpec *appv1alpha1.ServiceSpec, svc *corev1.Service) *co
 			corev1.EndpointSubset{
 				Addresses: []corev1.EndpointAddress{
 					corev1.EndpointAddress{
-						IP:       svc.Status.LoadBalancer.Ingress[0].IP,
+						IP:       vmi.Status.Interfaces[0].IP,
 						Hostname: svcSpec.Host,
+					},
+				},
+				Ports: []corev1.EndpointPort{
+					corev1.EndpointPort{
+						Port: svcSpec.Port,
 					},
 				},
 			},
