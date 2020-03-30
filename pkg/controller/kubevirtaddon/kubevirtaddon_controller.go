@@ -221,7 +221,7 @@ func generateRoute(svc *appv1alpha1.ServiceSpec) *ocpv1.Route {
 func generateEndpoint(svcSpec *appv1alpha1.ServiceSpec, svc *corev1.Service, vmi *vmiv1.VirtualMachineInstance) *corev1.Endpoints {
 	return &corev1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      svcSpec.ObjectMeta.Name,
+			Name:      svcSpec.ObjectMeta.Name + "endpoint",
 			Namespace: svcSpec.ObjectMeta.Namespace,
 			Labels:    svcSpec.ObjectMeta.Labels,
 		},
