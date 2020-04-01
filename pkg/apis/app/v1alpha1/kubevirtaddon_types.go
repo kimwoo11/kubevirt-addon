@@ -12,25 +12,31 @@ type VMISpec struct {
 	Namespace string `json:"namespace"`
 }
 
+// ServiceRefSpec defines the service for the route to reference
+type ServiceRefSpec struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
 // ServiceSpec defines the details of the service to be generated
 type ServiceSpec struct {
 	metav1.ObjectMeta `json:",omitempty,inline"`
 	Selector          map[string]string `json:"selector,omitempty"`
 	Port              int32             `json:"port,omitempty"`
 	TargetPort        int32             `json:"targetPort,omitempty"`
-	VMI               *VMISpec          `json:"vmi,omitempty"`
-	Host              string            `json:"host,omitempty"`
-	GenerateEndpoint  bool              `json:"generateEndpoint,omitempty"`
 }
 
 // RouteSpec defines the details of the routes to be generated
 type RouteSpec struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Host              string `json:"host,omitempty"`
+	Host              string         `json:"host,omitempty"`
+	ServiceRef        ServiceRefSpec `json:"serviceRef,omitempty"`
+	GenerateEndpoint  bool           `json:"generateEndpoint,omitempty"`
 }
 
 // GenerateSpec defines the gvr and wanted metadata to be used for generating new objects
 type GenerateSpec struct {
+	VMI      VMISpec       `json:"vmi"`
 	Services []ServiceSpec `json:"services,omitempty"`
 	Routes   []RouteSpec   `json:"routes,omitempty"`
 }

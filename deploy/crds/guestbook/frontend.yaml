@@ -1,0 +1,22 @@
+apiVersion: app.ibm.com/v1alpha1
+kind: KubevirtAddon
+metadata:
+  name: frontend
+spec:
+  vmi:
+    name: frontend
+    namespace: default
+  generate:
+    services:
+    - name: frontend
+      namespace: default
+      port: 31323
+      targetPort: 80
+      selector:
+        app: guestbook
+    routes:
+    - serviceRef:
+        name: frontend
+        namespace: default
+      host: guestbook.apps.folie.os.fyre.ibm.com
+      generateEndpoint: true

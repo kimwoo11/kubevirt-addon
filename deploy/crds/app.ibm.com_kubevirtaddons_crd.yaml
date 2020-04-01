@@ -40,34 +40,15 @@ spec:
                     description: RouteSpec defines the details of the routes to be
                       generated
                     properties:
-                      host:
-                        type: string
-                      metadata:
-                        type: object
-                    type: object
-                  type: array
-                services:
-                  items:
-                    description: ServiceSpec defines the details of the service to
-                      be generated
-                    properties:
                       generateEndpoint:
                         type: boolean
                       host:
                         type: string
-                      port:
-                        format: int32
-                        type: integer
-                      selector:
-                        additionalProperties:
-                          type: string
+                      metadata:
                         type: object
-                      targetPort:
-                        format: int32
-                        type: integer
-                      vmi:
-                        description: VMISpec defines which resource is targeted for
-                          generation
+                      serviceRef:
+                        description: ServiceRefSpec defines the service for the route
+                          to reference
                         properties:
                           name:
                             type: string
@@ -79,6 +60,36 @@ spec:
                         type: object
                     type: object
                   type: array
+                services:
+                  items:
+                    description: ServiceSpec defines the details of the service to
+                      be generated
+                    properties:
+                      port:
+                        format: int32
+                        type: integer
+                      selector:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      targetPort:
+                        format: int32
+                        type: integer
+                    type: object
+                  type: array
+                vmi:
+                  description: VMISpec defines which resource is targeted for generation
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+              required:
+              - vmi
               type: object
           type: object
         status:

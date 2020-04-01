@@ -1,6 +1,5 @@
 #!/bin/bash
 
-cd ..
 operator-sdk generate k8s
 operator-sdk generate crds
 operator-sdk build quay.io/stevekimibm/kubevirt-addon

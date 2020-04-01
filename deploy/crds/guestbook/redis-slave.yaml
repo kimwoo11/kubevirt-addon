@@ -1,0 +1,16 @@
+apiVersion: app.ibm.com/v1alpha1
+kind: KubevirtAddon
+metadata:
+  name: redis-slave
+spec:
+  vmi:
+    name: redis-slave
+    namespace: default
+  generate: 
+    services:
+    - name: redis-slave
+      namespace: default
+      port: 6379
+      selector:
+        app: redis
+        role: slave

@@ -1,0 +1,17 @@
+apiVersion: app.ibm.com/v1alpha1
+kind: KubevirtAddon
+metadata:
+  name: redis-master
+spec:
+  vmi:
+    name: redis-master
+    namespace: default
+  generate: 
+    services:
+    - name: redis-master
+      namespace: default
+      port: 6379
+      targetPort: 6379
+      selector: 
+        app: redis
+        role: master
