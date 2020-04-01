@@ -103,8 +103,8 @@ func (r *ReconcileKubevirtAddon) Reconcile(request reconcile.Request) (reconcile
 
 	vmi := &vmiv1.VirtualMachineInstance{}
 	err = r.client.Get(context.Background(), client.ObjectKey{
-		Name:      instance.Spec.Generate.VMI.Name,
-		Namespace: instance.Spec.Generate.VMI.Namespace,
+		Name:      instance.Spec.VMI.Name,
+		Namespace: instance.Spec.VMI.Namespace,
 	}, vmi)
 
 	generate := instance.Spec.Generate

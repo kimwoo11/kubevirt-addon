@@ -36,13 +36,13 @@ type RouteSpec struct {
 
 // GenerateSpec defines the gvr and wanted metadata to be used for generating new objects
 type GenerateSpec struct {
-	VMI      VMISpec       `json:"vmi"`
 	Services []ServiceSpec `json:"services,omitempty"`
 	Routes   []RouteSpec   `json:"routes,omitempty"`
 }
 
 // KubevirtAddonSpec defines the desired state of KubevirtAddon
 type KubevirtAddonSpec struct {
+	VMI      VMISpec       `json:"vmi"`
 	Generate *GenerateSpec `json:"generate,omitempty"`
 }
 
