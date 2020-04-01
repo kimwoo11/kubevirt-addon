@@ -77,20 +77,20 @@ spec:
                         type: integer
                     type: object
                   type: array
-                vmi:
-                  description: VMISpec defines which resource is targeted for generation
-                  properties:
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                  required:
-                  - name
-                  - namespace
-                  type: object
-              required:
-              - vmi
               type: object
+            vmi:
+              description: VMISpec defines which resource is targeted for generation
+              properties:
+                name:
+                  type: string
+                namespace:
+                  type: string
+              required:
+              - name
+              - namespace
+              type: object
+          required:
+          - vmi
           type: object
         status:
           description: KubevirtAddonStatus defines the observed state of KubevirtAddon

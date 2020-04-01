@@ -1,9 +1,9 @@
 # kubevirt-addon
 
-Creates a Service and Secret for ssh into existing/new VMIs
+## Overview
+The kubevirt-addon operator helps create Services, Routes, and Endpoints to expose services running on VMs, and create Endpoints to be aggregated to the MCM Hub cluster. 
 
 ## Deploy
-
 1. Clone this repository
 ```bash
 mkdir -p <project-directory>
@@ -24,3 +24,5 @@ kubectl apply -f deploy
 NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
 kubevirt-addon              1/1     1            1           16s
 ```
+
+## Guestbook Example

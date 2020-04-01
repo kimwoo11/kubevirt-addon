@@ -1,0 +1,51 @@
+apiVersion: kubevirt.io/v1alpha3
+kind: VirtualMachine
+metadata:
+  name: redis-master
+spec:
+  running: true	 
+  template:
+    metadata:
+      labels: 
+        app: redis
+        role: master
+        tier: backend
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - name: containervolume
+              disk:
+                bus: virtio
+            - name: cloudinitvolume
+              disk:
+                bus: virtio
+          interfaces:
+          - name: default
+            bridge: {}
+        resources:
+          requests:
+            memory: 1024M
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+        - name: containervolume
+          containerDisk:
+            image: quay.io/stevekimibm/ubuntu-image 
+        - name: cloudinitvolume
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              chpasswd:
+                list: |
+                  ubuntu:ubuntu
+                  root:toor
+                expire: False
+              runcmd:
+              - sudo apt update
+              - sudo apt install docker.io -y
+              - sudo docker pull k8s.gcr.io/redis:e2e
+              - sudo docker run -d -p 6379:6379 --name master k8s.gcr.io/redis:e2e

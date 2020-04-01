@@ -1,0 +1,50 @@
+apiVersion: kubevirt.io/v1alpha3
+kind: VirtualMachine
+metadata:
+  name: frontend
+spec:
+  running: true	 
+  template:
+    metadata:
+      labels: 
+        app: guestbook
+        tier: frontend
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - name: containervolume
+              disk:
+                bus: virtio
+            - name: cloudinitvolume
+              disk:
+                bus: virtio
+          interfaces:
+          - name: default
+            bridge: {}
+        resources:
+          requests:
+            memory: 1024M
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+        - name: containervolume
+          containerDisk:
+            image: quay.io/stevekimibm/ubuntu-image 
+        - name: cloudinitvolume
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              chpasswd:
+                list: |
+                  ubuntu:ubuntu
+                  root:toor
+                expire: False
+              runcmd:
+              - sudo apt update
+              - sudo apt install docker.io -y
+              - sudo docker pull gcr.io/google-samples/gb-frontend:v4
+              - sudo docker run -d -p 80:80 --name frontend gcr.io/google-samples/gb-frontend:v4
