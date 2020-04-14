@@ -10,6 +10,8 @@ spec:
     services:
     - name: redis-master
       namespace: default
+      labels:
+        app: guestbook
       port: 6379
       targetPort: 6379
       selector: 

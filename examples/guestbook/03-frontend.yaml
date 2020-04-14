@@ -10,10 +10,12 @@ spec:
     services:
     - name: frontend
       namespace: default
+      labels:
+        app: guestbook
       port: 31323
       targetPort: 80
       selector:
-        app: guestbook
+        app: frontend
     routes:
     - serviceRef:
         name: frontend

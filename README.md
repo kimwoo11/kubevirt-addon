@@ -26,3 +26,35 @@ kubevirt-addon              1/1     1            1           16s
 ```
 
 ## Guestbook Example
+This example will go through the deployment of Kubernetes' (Guestbook Application)[https://kubernetes.io/docs/tutorials/stateless-application/guestbook/] deployed through KubeVirt VMs and the KubeVirt-Addon operator.
+
+0. Deploy the frontend, redis-slave, and redis-master VMs found under [examples/guestbook/kubevirt-vms/](./examples/guestbook/kubevirt-vms)
+
+```bash
+kubectl apply -f ./examples/guestbook/kubevirt-vms/frontend.yaml
+kubectl apply -f ./examples/guestbook/kubevirt-vms/redismst.yaml
+kubectl apply -f ./examples/guestbook/kubevirt-vms/redisslv.yaml
+```
+
+1. Deploy the kubevirt-addon resources for each VM. These can be found under [examples/guestbook](./examples/guestbook/)
+
+```bash
+kubectl apply -f ./examples/guestbook/01-redis-master.yaml
+kubectl apply -f ./examples/guestbook/02-redis-slave.yaml
+kubectl apply -f ./examples/guestbook/03-frontend.yaml
+```
+
+2. Ensure that the intended services, routes, and endpoints have been deployed successfully
+
+```bash
+% kubectl get svc,routes,endpoints -l app=guestbook
+
+# TODO: display output
+```
+
+3. Go to the URL defined in the endpoint resource: (http://guestbook.apps.folie.os.fyre.ibm.com)
+```bash
+% kubectl describe endpoints -l app=guestbook
+
+# TODO: display output 
+```

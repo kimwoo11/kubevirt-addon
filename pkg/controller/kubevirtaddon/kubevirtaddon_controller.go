@@ -231,7 +231,7 @@ func generateRoute(routeSpec *appv1alpha1.RouteSpec, svc *corev1.Service) *ocpv1
 
 func generateEndpoint(svc *corev1.Service, vmi *vmiv1.VirtualMachineInstance, routeSpec *appv1alpha1.RouteSpec) *corev1.Endpoints {
 	anno := map[string]string{
-		"hostURL": routeSpec.Host,
+		"hostURL": "http://" + routeSpec.Host,
 	}
 	return &corev1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
